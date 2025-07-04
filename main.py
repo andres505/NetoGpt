@@ -4,7 +4,7 @@ import os
 
 app = FastAPI()
 
-# Cargar CSV con ruta absoluta relativa al script
+# Cargar CSV con ruta relativa segura
 csv_path = os.path.join(os.path.dirname(__file__), "ventas_inventario_diario.csv")
 df = pd.read_csv(csv_path, parse_dates=["fecha"])
 
@@ -21,10 +21,12 @@ def predict(tienda_id: str, producto_nombre: str):
 
         media_ventas = df_tp.tail(14)['ventas_unidades'].mean()
         latest = df_tp.iloc[-1]
-        stock_actual = latest['stock_actual']
-        lead_time = latest['lead_time_dias']
-        buffer = latest['buffer_seguridad']
-        demanda_esperada = media_ventas * lead_time
+
+        stock_actual = int(latest['stock_actual'])
+        lead_time = int(latest['lead_time_dias'])
+        buffer = int(latest['buffer_seguridad'])
+
+        demanda_esperada = float(media_ventas * lead_time)
         pedido_sugerido = max(0, round(demanda_esperada - stock_actual + buffer))
 
         return {
@@ -34,8 +36,10 @@ def predict(tienda_id: str, producto_nombre: str):
             "lead_time_dias": lead_time,
             "buffer": buffer,
             "demanda_esperada_hasta_entrega": round(demanda_esperada, 2),
-            "pedido_sugerido": pedido_sugerido
+            "pedido_sugerido": int(pedido_sugerido)
         }
+
     except Exception as e:
         return {"error": str(e)}
+
 
